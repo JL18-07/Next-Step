@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NextStep — SHS Application Tracker</title>
+<style>
+:root{--navy:#17365d;--blue:#2f6fed;--pale:#eef4ff;--bg:#f5f7fb;--ink:#172033;--muted:#687386;--line:#e4e9f1;--green:#16845b;--amber:#a96700;--red:#c23b3b}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.45 Inter,ui-sans-serif,system-ui,-apple-system,Segoe UI,sans-serif}
+header{background:linear-gradient(120deg,#17365d,#2f6fed);color:white;padding:26px max(22px,calc((100% - 1160px)/2))}
+header h1{margin:0;font-size:27px}header p{margin:5px 0 0;color:#e4edff}
+main{max-width:1160px;margin:24px auto;padding:0 18px}
+.toolbar{display:flex;gap:10px;flex-wrap:wrap;align-items:center;justify-content:space-between;margin-bottom:18px}
+button,.btn{border:0;border-radius:10px;padding:10px 15px;font-weight:650;cursor:pointer;font:inherit}
+.primary{background:var(--blue);color:white}.secondary{background:white;color:var(--navy);border:1px solid var(--line)}.danger{background:#fff0f0;color:var(--red)}
+.tabs{display:flex;gap:8px;margin-bottom:18px;flex-wrap:wrap}.tab{background:white;border:1px solid var(--line);color:var(--muted)}.tab.active{background:var(--navy);color:white;border-color:var(--navy)}
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px}
+.stat,.panel,.card{background:white;border:1px solid var(--line);border-radius:15px;box-shadow:0 3px 12px #18345b08}
+.stat{padding:15px}.stat span{display:block;color:var(--muted);font-size:13px}.stat strong{font-size:25px;color:var(--navy)}
+.panel{padding:18px;margin-bottom:16px}.panel h2{font-size:18px;margin:0 0 14px}
+.filters{display:flex;gap:8px;flex-wrap:wrap}.filters input,.filters select{max-width:240px}
+input,select,textarea{width:100%;padding:10px 11px;border:1px solid #d8dfeb;border-radius:9px;background:white;color:var(--ink);font:inherit}
+input:focus,select:focus,textarea:focus{outline:2px solid #b9d0ff;border-color:var(--blue)}
+.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+label{font-size:13px;font-weight:650;color:#455168;display:block}label input,label select,label textarea{margin-top:5px}
+.full{grid-column:1/-1}.hidden{display:none!important}
+.list{display:grid;gap:11px}.card{padding:15px}.cardtop{display:flex;justify-content:space-between;gap:12px;align-items:flex-start}
+.card h3{margin:0 0 3px;font-size:17px}.sub{color:var(--muted);font-size:13px}
+.badge{display:inline-block;padding:4px 9px;border-radius:99px;background:#edf2fa;color:#41516b;font-size:12px;font-weight:700;white-space:nowrap}
+.badge.red{background:#ffe8e8;color:var(--red)}.badge.amber{background:#fff3d9;color:var(--amber)}.badge.green{background:#e3f6ed;color:var(--green)}
+.details{display:flex;gap:15px;flex-wrap:wrap;color:#566176;font-size:13px;margin:12px 0}
+.cardactions{display:flex;gap:7px;flex-wrap:wrap}.cardactions button{padding:7px 10px;font-size:13px}
+.progress{height:7px;background:#edf0f5;border-radius:9px;overflow:hidden;margin:9px 0}.progress div{height:100%;background:var(--blue)}
+.reqrow{display:flex;align-items:center;gap:10px;border-bottom:1px solid var(--line);padding:10px 0}.reqrow:last-child{border:0}
+.reqrow input[type=checkbox]{width:18px;height:18px}.reqrow span{flex:1}.reqrow.done span{text-decoration:line-through;color:var(--muted)}
+.empty{text-align:center;color:var(--muted);padding:35px 15px}
+.modal{position:fixed;inset:0;background:#101a2c88;display:flex;align-items:center;justify-content:center;padding:15px;z-index:4}
+.dialog{background:white;border-radius:16px;padding:22px;width:min(650px,100%);max-height:92vh;overflow:auto}.dialoghead{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px}.dialoghead h2{margin:0}
+.dialogfoot{display:flex;justify-content:flex-end;gap:8px;margin-top:18px}
+.smallnote{color:var(--muted);font-size:12px;margin-top:12px}
+a{color:var(--blue);text-decoration:none}
+@media(max-width:760px){.stats{grid-template-columns:repeat(2,1fr)}.grid{grid-template-columns:1fr}.full{grid-column:auto}.cardtop{display:block}.badge{margin-top:8px}}
+</style>
+</head>
+<body>
+<header><h1>🎓 NextStep</h1><p>Your senior high school application and scholarship deadline tracker.</p></header>
+<main>
+  <div class="toolbar"><div><strong id="todayLabel"></strong><div class="sub">Keep every application, deadline, and document in one place.</div></div><button class="primary" id="addAppBtn">＋ Add application</button></div>
+  <section class="stats">
+    <div class="stat"><span>Applications</span><strong id="total">0</strong></div>
+    <div class="stat"><span>Due in 7 days</span><strong id="soon">0</strong></div>
+    <div class="stat"><span>Past deadline</span><strong id="overdue">0</strong></div>
+    <div class="stat"><span>Accepted</span><strong id="accepted">0</strong></div>
+  </section>
+  <nav class="tabs">
+    <button class="tab active" data-tab="applications">Applications</button>
+    <button class="tab" data-tab="requirements">Requirements checklist</button>
+    <button class="tab" data-tab="guide">How to use</button>
+  </nav>
+  <section id="applications">
+    <div class="panel">
+      <div class="filters">
+        <input id="search" placeholder="Search school, scholarship, course…">
+        <select id="statusFilter"><option value="">All statuses</option><option>Not started</option><option>Preparing</option><option>Submitted</option><option>Under review</option><option>Accepted</option><option>Waitlisted</option><option>Rejected</option></select>
+        <select id="typeFilter"><option value="">All types</option><option>College admission</option><option>Scholarship</option><option>Entrance exam</option><option>Technical-vocational</option><option>Other</option></select>
+      </div>
+    </div>
+    <div class="list" id="appList"></div>
+  </section>
+  <section id="requirements" class="hidden">
+    <div class="panel"><h2>My document checklist</h2>
+      <form id="reqForm" class="filters"><input id="reqName" placeholder="Add a requirement (e.g. PSA birth certificate)" required><button class="primary">Add requirement</button></form>
+      <div id="reqList"></div>
+      <p class="smallnote">Requirements differ by school and scholarship. Confirm the official list before submitting documents.</p>
+    </div>
+  </section>
+  <section id="guide" class="hidden">
+    <div class="panel"><h2>How to use NextStep</h2>
+      <ol>
+        <li>Select <b>Add application</b> and enter the school, scholarship, exam, or program.</li>
+        <li>Enter the official deadline and application link. The app calculates the days remaining.</li>
+        <li>Update the status as you prepare and submit your application.</li>
+        <li>Use the requirements checklist to track documents you still need to collect.</li>
+        <li>Check this app regularly. It saves information in this browser on this device.</li>
+      </ol>
+      <p><b>Privacy note:</b> Your entries are stored locally in this browser. They are not sent to a school or uploaded to an online account. Export a backup if you change devices or clear browser data.</p>
+      <button class="secondary" id="exportBtn">Export backup (JSON)</button>
+      <label style="display:inline-block;margin-left:8px"><span class="btn secondary">Import backup<input id="importFile" type="file" accept="application/json" hidden></span></label>
+    </div>
+  </section>
+  <p class="smallnote">Reminder: NextStep is an organizer, not an official admissions source. Always verify dates, eligibility, and requirements with the institution.</p>
+</main>
+
+<div class="modal hidden" id="appModal">
+ <div class="dialog">
+  <div class="dialoghead"><h2 id="modalTitle">Add application</h2><button class="secondary" id="closeModal">✕</button></div>
+  <form id="appForm">
+   <input type="hidden" id="editId">
+   <div class="grid">
+    <label>School / organization *<input id="school" required placeholder="e.g. State University"></label>
+    <label>Application type *<select id="type" required><option value="">Choose type</option><option>College admission</option><option>Scholarship</option><option>Entrance exam</option><option>Technical-vocational</option><option>Other</option></select></label>
+    <label>Program / course<input id="course" placeholder="e.g. BS Public Administration"></label>
+    <label>Deadline *<input id="deadline" type="date" required></label>
+    <label>Application opens<input id="opens" type="date"></label>
+    <label>Priority<select id="priority"><option>Medium</option><option>High</option><option>Low</option></select></label>
+    <label>Status<select id="status"><option>Not started</option><option>Preparing</option><option>Submitted</option><option>Under review</option><option>Accepted</option><option>Waitlisted</option><option>Rejected</option></select></label>
+    <label>Application link<input id="link" type="url" placeholder="https://…"></label>
+    <label class="full">Requirements / notes<textarea id="notes" rows="3" placeholder="List required documents, exam dates, contact details, or next steps…"></textarea></label>
+   </div>
+   <div class="dialogfoot"><button type="button" class="secondary" id="cancelModal">Cancel</button><button class="primary" type="submit">Save application</button></div>
+  </form>
+ </div>
+</div>
+<script>
+const $=id=>document.getElementById(id);
+const storeKey='nextstep_shs_apps_v1', reqKey='nextstep_shs_reqs_v1';
+let apps=JSON.parse(localStorage.getItem(storeKey)||'[]');
+let reqs=JSON.parse(localStorage.getItem(reqKey)||'null')||[
+ 'PSA birth certificate','Grade 11 report card','Grade 12 report card (if required)',
+ 'Certificate of enrollment / expected graduation','Good moral character certificate',
+ 'ID photo','Proof of income or indigency (if required)','Parent / guardian consent (if required)',
+ 'Entrance examination result (if required)','Completed application form'
+].map((name,i)=>({id:'r'+i,name,done:false}));
+function save(){localStorage.setItem(storeKey,JSON.stringify(apps));localStorage.setItem(reqKey,JSON.stringify(reqs));}
+function dayDiff(date){const d=new Date(date+'T00:00:00');const t=new Date();t.setHours(0,0,0,0);return Math.round((d-t)/86400000)}
+function esc(s=''){return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
+function statusClass(a){if(['Accepted','Submitted'].includes(a.status))return 'green';if(a.status==='Rejected')return 'red';return ''}
+function render(){
+ $('todayLabel').textContent=new Date().toLocaleDateString(undefined,{weekday:'long',year:'numeric',month:'long',day:'numeric'});
+ const active=apps.filter(a=>!['Accepted','Rejected'].includes(a.status));
+ $('total').textContent=apps.length;$('soon').textContent=active.filter(a=>dayDiff(a.deadline)>=0&&dayDiff(a.deadline)<=7).length;
+ $('overdue').textContent=active.filter(a=>dayDiff(a.deadline)<0).length;$('accepted').textContent=apps.filter(a=>a.status==='Accepted').length;
+ const q=$('search').value.toLowerCase(), st=$('statusFilter').value, ty=$('typeFilter').value;
+ const shown=apps.filter(a=>(`${a.school} ${a.course} ${a.type}`.toLowerCase().includes(q))&&(!st||a.status===st)&&(!ty||a.type===ty)).sort((a,b)=>a.deadline.localeCompare(b.deadline));
+ $('appList').innerHTML=shown.length?shown.map(a=>{
+ const days=dayDiff(a.deadline), closed=['Accepted','Rejected'].includes(a.status);
+ const urgency=closed?'':days<0?'red':days<=7?'amber':days<=30?'green':'';
+ const due=days<0?`${Math.abs(days)} day(s) overdue`:days===0?'Due today':`${days} day(s) left`;
+ return `<article class="card"><div class="cardtop"><div><h3>${esc(a.school)}</h3><div class="sub">${esc(a.type)}${a.course?' · '+esc(a.course):''}</div></div><span class="badge ${statusClass(a)}">${esc(a.status)}</span></div>
+ <div class="details"><span>📅 Deadline: <b>${new Date(a.deadline+'T00:00:00').toLocaleDateString()}</b></span><span class="badge ${urgency}">${closed?'Status updated':due}</span><span>Priority: ${esc(a.priority)}</span></div>
+ ${a.notes?`<div class="sub" style="margin-bottom:10px">${esc(a.notes)}</div>`:''}
+ ${a.link?`<div style="margin-bottom:10px"><a href="${esc(a.link)}" target="_blank" rel="noopener">Open application website ↗</a></div>`:''}
+ <div class="cardactions"><button class="secondary" onclick="editApp('${a.id}')">Edit</button><button class="secondary" onclick="cycleStatus('${a.id}')">Update status</button><button class="danger" onclick="deleteApp('${a.id}')">Delete</button></div></article>`;
+ }).join(''):'<div class="panel empty">No applications found. Add your first school or scholarship application to get started.</div>';
+ renderReqs();
+}
+function renderReqs(){
+ $('reqList').innerHTML=reqs.length?`<div class="progress"><div style="width:${reqs.length?100*reqs.filter(r=>r.done).length/reqs.length:0}%"></div></div><div class="sub">${reqs.filter(r=>r.done).length} of ${reqs.length} completed</div>`+reqs.map(r=>`<div class="reqrow ${r.done?'done':''}"><input type="checkbox" ${r.done?'checked':''} onchange="toggleReq('${r.id}')"><span>${esc(r.name)}</span><button class="danger" onclick="removeReq('${r.id}')">Remove</button></div>`).join(''):'<p class="empty">No requirements yet. Add one above.</p>';
+}
+function openModal(a=null){
+ $('appForm').reset();$('editId').value=a?.id||'';$('modalTitle').textContent=a?'Edit application':'Add application';
+ if(a){$('school').value=a.school;$('type').value=a.type;$('course').value=a.course||'';$('deadline').value=a.deadline;$('opens').value=a.opens||'';$('priority').value=a.priority;$('status').value=a.status;$('link').value=a.link||'';$('notes').value=a.notes||''}
+ $('appModal').classList.remove('hidden');
+}
+function closeModal(){$('appModal').classList.add('hidden')}
+$('addAppBtn').onclick=()=>openModal();$('closeModal').onclick=closeModal;$('cancelModal').onclick=closeModal;
+$('appForm').onsubmit=e=>{e.preventDefault();const id=$('editId').value||crypto.randomUUID();const item={id,school:$('school').value.trim(),type:$('type').value,course:$('course').value.trim(),deadline:$('deadline').value,opens:$('opens').value,priority:$('priority').value,status:$('status').value,link:$('link').value.trim(),notes:$('notes').value.trim()};const i=apps.findIndex(a=>a.id===id);if(i>=0)apps[i]=item;else apps.push(item);save();closeModal();render()};
+window.editApp=id=>openModal(apps.find(a=>a.id===id));
+window.deleteApp=id=>{if(confirm('Delete this application?')){apps=apps.filter(a=>a.id!==id);save();render()}};
+window.cycleStatus=id=>{const a=apps.find(a=>a.id===id),states=['Not started','Preparing','Submitted','Under review','Accepted','Waitlisted','Rejected'];a.status=states[(states.indexOf(a.status)+1)%states.length];save();render()};
+$('reqForm').onsubmit=e=>{e.preventDefault();const name=$('reqName').value.trim();if(name){reqs.push({id:crypto.randomUUID(),name,done:false});$('reqName').value='';save();renderReqs()}};
+window.toggleReq=id=>{const r=reqs.find(r=>r.id===id);r.done=!r.done;save();renderReqs()};
+window.removeReq=id=>{reqs=reqs.filter(r=>r.id!==id);save();renderReqs()};
+document.querySelectorAll('.tab').forEach(b=>b.onclick=()=>{document.querySelectorAll('.tab').forEach(x=>x.classList.toggle('active',x===b));['applications','requirements','guide'].forEach(id=>$(id).classList.toggle('hidden',id!==b.dataset.tab))});
+['search','statusFilter','typeFilter'].forEach(id=>$(id).addEventListener(id==='search'?'input':'change',render));
+$('exportBtn').onclick=()=>{const blob=new Blob([JSON.stringify({apps,reqs},null,2)],{type:'application/json'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='nextstep-backup.json';a.click();URL.revokeObjectURL(a.href)};
+$('importFile').onchange=async e=>{const f=e.target.files[0];if(!f)return;try{const data=JSON.parse(await f.text());if(!Array.isArray(data.apps)||!Array.isArray(data.reqs))throw Error();if(confirm('Import backup and replace current tracker data?')){apps=data.apps;reqs=data.reqs;save();render();alert('Backup imported.')}}catch{alert('That backup file could not be read.')}e.target.value=''};
+render();
+</script>
+</body>
+</html>
